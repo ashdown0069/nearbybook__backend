@@ -1,0 +1,46 @@
+# 워크플로우의 이름
+name: Deploy to Oracle Cloud VPS
+
+# 언제 이 워크플로우를 실행할 것인지 정의
+on:
+  push:
+    branches:
+      - main # main 브랜치에 push될 때만 실행
+
+# 실행될 작업(job)들을 정의
+jobs:
+  deploy:
+    # 이 작업이 실행될 환경 (최신 Ubuntu)
+    runs-on: ubuntu-latest
+
+    # 작업의 단계(step)들을 정의
+    steps:
+      # 1. 저장소 코드 체크아웃
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      # 2. SSH를 통해 VPS에 접속하여 배포 명령어 실행
+      - name: Deploy to VPS via SSH
+        uses: appleboy/ssh-action@master
+        with:
+          host: ${{ secrets.VPS_HOST }} # GitHub Secret에서 IP 주소 가져오기
+          username: ${{ secrets.VPS_USER }} # GitHub Secret에서 사용자 이름 가져오기
+          key: ${{ secrets.VPS_PRIVATE_KEY }} # GitHub Secret에서 SSH 개인키 가져오기
+          script: |
+            # VPS에서 실행할 명령어들을 순서대로 작성
+            cd ${{ secrets.VPS_PROJECT_PATH }} # Secret에 저장된 프로젝트 경로로 이동
+
+            echo "🚚 Pulling latest code from GitHub..."
+            git pull origin main # 최신 코드를 pull
+
+            # Node.js 프로젝트의 경우 (필요에 따라 수정)
+            echo "📦 Installing dependencies..."
+            npm install
+
+            echo "🔨 Building application..."
+            npm run build
+
+            echo "🚀 Restarting application with PM2..."
+            pm2 reload all # pm2로 실행 중인 모든 앱을 재시작 (또는 pm2 restart app-name)
+
+            echo "✅ Deployment successful!"
