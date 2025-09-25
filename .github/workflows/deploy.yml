@@ -27,7 +27,13 @@ jobs:
           username: ${{ secrets.VPS_USER }} # GitHub Secret에서 사용자 이름 가져오기
           key: ${{ secrets.VPS_PRIVATE_KEY }} # GitHub Secret에서 SSH 개인키 가져오기
           script: |
-            # VPS에서 실행할 명령어들을 순서대로 작성
+            # NVM 환경 변수를 로드하여 npm과 pm2를 사용할 수 있도록 합니다.
+            export NVM_DIR="$HOME/.nvm"
+            [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"  
+            [ -s "$NVM_DIR/bash_completion" ] && \. "$NVM_DIR/bash_completion"
+            # --------------------------
+
+              # VPS에서 실행할 명령어들을 순서대로 작성
             cd ${{ secrets.VPS_PROJECT_PATH }} # Secret에 저장된 프로젝트 경로로 이동
 
             echo "🚚 Pulling latest code from GitHub..."
@@ -40,7 +46,7 @@ jobs:
             echo "🔨 Building application..."
             npm run build
 
-            echo "🚀 Restarting application with PM2..."
-            pm2 reload all # pm2로 실행 중인 모든 앱을 재시작 (또는 pm2 restart app-name)
+            echo "🚀 Starting application with PM2..."
+            pm2 restart nearbybook || pm2 start dist/main.js --name nearbybook --watch
 
             echo "✅ Deployment successful!"
