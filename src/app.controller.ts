@@ -15,6 +15,7 @@ import { BookListResponseDto } from './dtos/books-response.dto';
 import { FeedbackDto } from './dtos/feedback.dto';
 import { LoanAvailableDto } from './dtos/loan-available';
 import { CacheInterceptor } from '@nestjs/cache-manager';
+import { GetLibraryListDto } from './dtos/get-library-list.dto';
 @Controller('/')
 export class AppController {
   constructor(private readonly appService: AppService) {}
@@ -30,17 +31,39 @@ export class AppController {
     return this.appService.getBookLoanStatus(query.isbn, query.libCode);
   }
 
+  // @UseInterceptors(CacheInterceptor)
+  @Get('/getlibs')
+  async SearchLibsForMap(@Query() query: GetLibraryListDto) {
+    const regionLibList = await this.appService.getLibraryList(
+      query.region,
+      query.dtl_region,
+    );
+
+    const libListWithBook = await this.appService.getLibraryListByISBN(
+      query.isbn,
+      query.region,
+      query.dtl_region,
+    );
+    const result = regionLibList.map((lib: any) => ({
+      hasBook: libListWithBook.some(
+        (libWithBook: any) => libWithBook.libCode === lib.libCode,
+      ),
+      ...lib,
+    }));
+
+    return result;
+  }
+
   @UseInterceptors(CacheInterceptor)
   @Serialize(LibraryResponseDto)
   @Get('/isbn')
-  async SearchByISBN(@Query() query: GetLibraryListByIsbnDto) {
+  async SearchLibsByISBN(@Query() query: GetLibraryListByIsbnDto) {
     const result = await this.appService.getLibraryListByISBN(
       query.isbn,
       query.region,
       query.dtl_region,
     );
 
-    console.log('/isbn', query);
     return result;
   }
 

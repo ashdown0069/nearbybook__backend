@@ -123,12 +123,38 @@ export class AppService {
     }
   }
 
+  async getLibraryList(region: number, detailRegion: number) {
+    try {
+      const result = await lastValueFrom(
+        this.httpService.get(`http://data4library.kr/api/libSrch`, {
+          params: {
+            authKey: process.env.LIBRARY_BIGDATA_API_KEY,
+            pageNo: 1,
+            pageSize: 50,
+            format: 'json',
+            region: region,
+            dtl_region: detailRegion,
+          },
+        }),
+      );
+
+      return result.data.response.libs.map((lib) => lib.lib);
+    } catch (error) {
+      this.logger.error('getLibraryList service error', error);
+      this.sendMessageToDiscord(
+        'getLibraryListByISBN service error',
+        JSON.stringify(error),
+        'Error',
+      );
+      throw new InternalServerErrorException('can not get library list');
+    }
+  }
+
   async getLibraryListByISBN(
     ISBN: number,
     region: number,
     detailRegion: number,
   ) {
-    console.log('getLibraryListByISBN', ISBN, region, detailRegion);
     try {
       const response = await lastValueFrom(
         this.httpService.get(`http://data4library.kr/api/libSrchByBook`, {
@@ -145,7 +171,6 @@ export class AppService {
         }),
       );
 
-      console.log('response.data.response', response.data.response);
       if (response.data.response.libs.length > 0) {
         return response.data.response.libs.map((lib) => lib.lib);
       } else {
