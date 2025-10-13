@@ -31,7 +31,7 @@ export class AppController {
     return this.appService.getBookLoanStatus(query.isbn, query.libCode);
   }
 
-  // @UseInterceptors(CacheInterceptor)
+  @UseInterceptors(CacheInterceptor)
   @Get('/getlibs')
   async SearchLibsForMap(@Query() query: GetLibraryListDto) {
     const regionLibList = await this.appService.getLibraryList(
