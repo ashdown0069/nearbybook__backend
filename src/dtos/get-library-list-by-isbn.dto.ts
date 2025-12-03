@@ -1,5 +1,6 @@
 import { Type } from 'class-transformer';
 import { IsInt, IsNotEmpty, IsOptional } from 'class-validator';
+//삭제예정
 export class GetLibraryListByIsbnDto {
   @IsNotEmpty()
   @Type(() => Number)

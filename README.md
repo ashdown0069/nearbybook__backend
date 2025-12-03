@@ -27,8 +27,10 @@
 ```
 nearbybook 와 nearbybook 확장프로그램의 백엔드
 ```
-[Frontend](https://github.com/ashdown0069/nearbybook) / 
+
+[Frontend](https://github.com/ashdown0069/nearbybook) /
 [Extension](https://github.com/ashdown0069/nearbybook_extension)
+
 ## Project setup
 
 ```bash

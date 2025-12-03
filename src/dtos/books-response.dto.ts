@@ -1,5 +1,5 @@
 import { Expose, Type } from 'class-transformer';
-
+//삭제예정
 /**
  * @class BookDto
  * @description 클라이언트에게 노출될 개별 책의 데이터 형식을 정의합니다.

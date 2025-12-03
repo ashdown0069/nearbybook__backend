@@ -1,5 +1,5 @@
 import { Expose } from 'class-transformer';
-
+//삭제예정
 export class LibraryResponseDto {
   @Expose()
   libCode: string;
