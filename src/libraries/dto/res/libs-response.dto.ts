@@ -2,6 +2,9 @@ import { Expose } from 'class-transformer';
 
 export class LibraryResponseDto {
   @Expose()
+  hasBook: boolean;
+
+  @Expose()
   libCode: string;
 
   @Expose()

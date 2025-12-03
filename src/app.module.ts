@@ -7,6 +7,9 @@ import { HttpModule } from '@nestjs/axios';
 import { APP_GUARD } from '@nestjs/core';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { CacheModule } from '@nestjs/cache-manager';
+import { BooksModule } from './books/books.module';
+import { LibrariesModule } from './libraries/libraries.module';
+import { CommonModule } from './common/common.module';
 
 @Module({
   imports: [
@@ -25,8 +28,10 @@ import { CacheModule } from '@nestjs/cache-manager';
       ],
     }),
     HttpModule.register({
-      // timeout: 5000,
+      global: true,
+      timeout: 5000,
       maxRedirects: 5,
+      baseURL: 'http://data4library.kr/api',
     }),
     TypeOrmModule.forRoot({
       type: 'better-sqlite3',
@@ -36,9 +41,12 @@ import { CacheModule } from '@nestjs/cache-manager';
     }),
     CacheModule.register({
       isGlobal: true,
-      ttl: 1000 * 60 * 30, //
-      max: 10000, // maximum number of items in cache,
+      ttl: 1000 * 60 * 30, //30 min
+      max: 5000, // maximum number of items in cache,
     }),
+    BooksModule,
+    LibrariesModule,
+    CommonModule,
   ],
   controllers: [AppController],
   providers: [

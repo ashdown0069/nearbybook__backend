@@ -1,22 +1,32 @@
 ###
-GET http://localhost:3001/backendapi/isbn?isbn=9791192372730&region=11
-
-
-###
-GET http://localhost:3001/backendapi/searchbooks?mode=title&query=231&pageNo=1
-
+GET  http://localhost:4001/getlibs?isbn=9791194383437&region=11&dtl_region=11060
 
 ###
-GET  http://localhost:3000
+GET  http://localhost:4001/isbn?isbn=9791141602451&region=11&dtl_region=11020
 
 ###
-GET  http://localhost:3000/getlibrarylist?isbn=9791173323027&region=11&dtl_region=11020
+GET  http://localhost:4001/searchbooks?query=9791194383437&mode=isbn&pageNo=1
 
 ###
-GET  http://localhost:3000/getlibrarylist?isbn=9788931479393&region=11&dtl_region=11060
+GET  http://localhost:4001/searchbooks?query=리액트&mode=title&pageNo=2
+
+###
+GET  http://localhost:4001/popularloanbooks
+
+###
+GET  http://localhost:4001/getRegionLibs?region=11
+
 
 ###
 GET http://api.nearbybook.kr/
 
 ###
 GET https://api.nearbybook.kr/
+
+###
+GET  http://localhost:4001/popularloanbooks
+
+
+### 
+
+GET http://data4library.kr/api/srchBooks?authKey=87c71a8b62e42b783479e358f07a5e9a14328c3f0efc02c0002a1c009bf2ff50&keyword=전진권&format=json

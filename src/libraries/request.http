@@ -1,0 +1,10 @@
+### 도서 소장 도서관 찾기
+GET http://localhost:4001/libraries/searchbyisbn?isbn=9791194383437&region=11&dtlRegion=11060
+
+
+### 도서관 찾기 광역기준
+GET http://localhost:4001/libraries/searchbyregion?region=11
+
+
+### 도서관 찾기 구, 군 기준
+GET http://localhost:4001/libraries/searchbyregion?region=11&dtlRegion=11060

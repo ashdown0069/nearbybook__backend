@@ -1,21 +1,29 @@
 import { HttpService } from '@nestjs/axios';
 import {
   BadRequestException,
+  Inject,
   Injectable,
   InternalServerErrorException,
   Logger,
 } from '@nestjs/common';
 import { firstValueFrom, lastValueFrom, map } from 'rxjs';
 import { searchBookDto } from './dtos/search-book.dto';
+import { getDateRange } from './utils';
+import { Cacheable } from './decorator/cache.decorator';
+import { Cache, CACHE_MANAGER } from '@nestjs/cache-manager';
 
 @Injectable()
 export class AppService {
   private readonly logger = new Logger(AppService.name);
-  constructor(private readonly httpService: HttpService) {}
+  constructor(
+    private readonly httpService: HttpService,
+    @Inject(CACHE_MANAGER) private readonly cacheManager: Cache,
+  ) {}
   getHello(): string {
     return 'Hello World!';
   }
 
+  //삭제예정
   async sendMessageToDiscord(
     title: string,
     description: string,
@@ -55,6 +63,7 @@ export class AppService {
     return true;
   }
 
+  //삭제예정
   async getBooks(
     mode: searchBookDto['mode'],
     query: searchBookDto['query'],
@@ -123,7 +132,46 @@ export class AppService {
     }
   }
 
-  async getLibraryList(region: number, detailRegion: number) {
+  //삭제예정
+  async getRegionLibraryList(region: number) {
+    try {
+      const result = await lastValueFrom(
+        this.httpService.get(`http://data4library.kr/api/libSrch`, {
+          params: {
+            authKey: process.env.LIBRARY_BIGDATA_API_KEY,
+            pageNo: 1,
+            pageSize: 500,
+            format: 'json',
+            region: region,
+          },
+        }),
+      );
+
+      // return result.data;
+      return result.data.response.libs.map((lib) => lib.lib);
+    } catch (error) {
+      this.logger.error('getRegionLibraryList service error', error);
+      this.sendMessageToDiscord(
+        'getRegionLibraryList service error',
+        JSON.stringify(error),
+        'Error',
+      );
+      throw new InternalServerErrorException('can not get library list');
+    }
+  }
+
+  //삭제예정
+  @Cacheable({
+    ttl: 1000 * 60 * 60, // 1 hour
+    customKey: (args) => `libs${args[0]}${args[1]}`,
+  })
+  async getLibraryList(region: number, detailRegion?: number) {
+    let obj = {};
+    if (detailRegion) {
+      obj = {
+        dtl_region: detailRegion,
+      };
+    }
     try {
       const result = await lastValueFrom(
         this.httpService.get(`http://data4library.kr/api/libSrch`, {
@@ -133,7 +181,7 @@ export class AppService {
             pageSize: 50,
             format: 'json',
             region: region,
-            dtl_region: detailRegion,
+            ...obj,
           },
         }),
       );
@@ -150,6 +198,11 @@ export class AppService {
     }
   }
 
+  //삭제예정
+  @Cacheable({
+    ttl: 1000 * 60 * 60, // 1 hour
+    customKey: (args) => `libs_with_ISBN${args[0]}`,
+  })
   async getLibraryListByISBN(
     ISBN: number,
     region: number,
@@ -187,6 +240,7 @@ export class AppService {
     }
   }
 
+  //삭제예정
   async getBookLoanStatus(isbn: number, libCode: number) {
     if (isbn.toString().length !== 13) {
       throw new BadRequestException('Invalid ISBN format');
@@ -211,6 +265,139 @@ export class AppService {
         'Error',
       );
       throw new InternalServerErrorException('can not get loan status');
+    }
+  }
+
+  //삭제예정
+  @Cacheable({
+    ttl: 1000 * 60 * 60 * 12, // 12 hour
+    customKey: () => `popularLoanBooks`,
+  })
+  async getPopularLoanBooks() {
+    const { startDate, endDate } = getDateRange(1);
+
+    try {
+      const result = await lastValueFrom(
+        this.httpService.get(`http://data4library.kr/api/loanItemSrch`, {
+          params: {
+            authKey: process.env.LIBRARY_BIGDATA_API_KEY,
+            startDt: startDate,
+            endDt: endDate,
+            format: 'json',
+            pageNo: 1,
+            pageSize: 10,
+          },
+        }),
+      );
+      const books = result.data.response.docs.map((item) => item.doc);
+
+      return books;
+    } catch (error) {
+      this.logger.error('getPopularLoanBooks service error', error);
+      this.sendMessageToDiscord(
+        'getPopularLoanBooks service error',
+        JSON.stringify(error),
+        'Error',
+      );
+      throw new InternalServerErrorException('can not get PopularLoanBooks');
+    }
+  }
+
+  //삭제예정
+  async getBooksByAuthor(query: string, pageNo: searchBookDto['pageNo'] = 1) {
+    try {
+      const result = await firstValueFrom(
+        this.httpService.get(`http://data4library.kr/api/srchBooks`, {
+          params: {
+            author: query.trim().toLowerCase().replace(/ /g, ''),
+            authKey: process.env.LIBRARY_BIGDATA_API_KEY,
+            pageSize: 12,
+            sort: 'pubYear',
+            order: 'desc',
+            format: 'json',
+            pageNo,
+            exactMatch: true,
+          },
+        }),
+      );
+
+      const response = result.data.response;
+      if (!response || !response.docs) {
+        return {
+          pages: 0,
+          books: [],
+          numFound: 0,
+        };
+      }
+
+      const foundBooks = response.numFound;
+      const pageSize = 12;
+      const pages = Math.ceil(foundBooks / pageSize);
+      const books = response.docs.map((item) => item.doc);
+      const responseWithPages = {
+        pages: pages,
+        books: books,
+        numFound: foundBooks,
+      };
+
+      return responseWithPages;
+    } catch (error) {
+      this.logger.error('getBooksByTitle service error', error);
+      this.sendMessageToDiscord(
+        'getBooksByTitle service error',
+        JSON.stringify(error),
+        'Error',
+      );
+      throw new InternalServerErrorException('can not get book list');
+    }
+  }
+
+  //삭제예정
+  async getBooksByTitle(query: string, pageNo: searchBookDto['pageNo'] = 1) {
+    try {
+      const result = await firstValueFrom(
+        this.httpService.get(`http://data4library.kr/api/srchBooks`, {
+          params: {
+            title: query.trim().toLowerCase().replace(/ /g, ''),
+            authKey: process.env.LIBRARY_BIGDATA_API_KEY,
+            pageSize: 12,
+            sort: 'pubYear',
+            order: 'desc',
+            format: 'json',
+            pageNo,
+            exactMatch: true,
+          },
+        }),
+      );
+
+      const response = result.data.response;
+      if (!response || !response.docs) {
+        return {
+          pages: 0,
+          books: [],
+          numFound: 0,
+        };
+      }
+
+      const foundBooks = response.numFound;
+      const pageSize = 12;
+      const pages = Math.ceil(foundBooks / pageSize);
+      const books = response.docs.map((item) => item.doc);
+      const responseWithPages = {
+        pages: pages,
+        books: books,
+        numFound: foundBooks,
+      };
+
+      return responseWithPages;
+    } catch (error) {
+      this.logger.error('getBooksByTitle service error', error);
+      this.sendMessageToDiscord(
+        'getBooksByTitle service error',
+        JSON.stringify(error),
+        'Error',
+      );
+      throw new InternalServerErrorException('can not get book list');
     }
   }
 }
