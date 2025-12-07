@@ -103,7 +103,7 @@ export class LibrariesService {
     }
   }
 
-  async findLibrariesByBookISBN(
+  async findLibrariesByISBN__Web(
     ISBN: string,
     region: number,
     dtlRegion: number,
@@ -120,6 +120,8 @@ export class LibrariesService {
       libsWithBookPromise,
       regionLibsPromise,
     ]);
+    console.log('libsWithBook', libsWithBook);
+    console.log('regionLibs', regionLibs);
 
     const result = regionLibs.map((lib: any) => ({
       hasBook: libsWithBook.some(
@@ -127,6 +129,7 @@ export class LibrariesService {
       ),
       ...lib,
     }));
+    console.log('result', result);
     return result;
   }
 }

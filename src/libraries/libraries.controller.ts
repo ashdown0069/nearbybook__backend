@@ -9,11 +9,23 @@ import { LibraryResponseDto } from './dto/res/libs-response.dto';
 export class LibrariesController {
   constructor(private readonly librariesService: LibrariesService) {}
 
-  //도서(isbn사용) 소장 도서관 검색
+  //도서(isbn사용) 소장 도서관 검색 (지역 전체 도서관 리턴)
   @Serialize(LibraryResponseDto)
   @Get('/searchbyisbn')
-  async findLibrariesByBookISBN(@Query() query: SearchLibrariesByISBNDto) {
-    return await this.librariesService.findLibrariesByBookISBN(
+  async findLibrariesByISBN__Web(@Query() query: SearchLibrariesByISBNDto) {
+    return await this.librariesService.findLibrariesByISBN__Web(
+      query.isbn,
+      query.region,
+      query.dtlRegion,
+    );
+  }
+
+  //도서(isbn사용) 소장 도서관만 리턴
+  @Get('/searchbyisbn/extension')
+  async findLibrariesByISBN__Extension(
+    @Query() query: SearchLibrariesByISBNDto,
+  ) {
+    return await this.librariesService.fetchLibrariesByISBN(
       query.isbn,
       query.region,
       query.dtlRegion,
