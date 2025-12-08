@@ -120,8 +120,6 @@ export class LibrariesService {
       libsWithBookPromise,
       regionLibsPromise,
     ]);
-    console.log('libsWithBook', libsWithBook);
-    console.log('regionLibs', regionLibs);
 
     const result = regionLibs.map((lib: any) => ({
       hasBook: libsWithBook.some(
@@ -129,7 +127,7 @@ export class LibrariesService {
       ),
       ...lib,
     }));
-    console.log('result', result);
+
     return result;
   }
 }

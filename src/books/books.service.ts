@@ -12,9 +12,12 @@ import { searchBooksDto } from './dto/req/search-books.dto';
 import { searchBookDto } from './dto/req/search-book.dto';
 import { CommonService } from 'src/common/common.service';
 import { formatDate, getDateRange } from 'src/utils';
+import { XMLParser } from 'fast-xml-parser';
+import { Cacheable } from 'src/decorator/cache.decorator';
 
 @Injectable()
 export class BooksService {
+  private readonly parser = new XMLParser();
   private readonly logger = new Logger(AppService.name);
   constructor(
     private readonly httpService: HttpService,
@@ -22,20 +25,73 @@ export class BooksService {
     @Inject(CACHE_MANAGER) private readonly cacheManager: Cache,
   ) {}
 
-  async searchBook(isbn: searchBookDto['isbn']) {
-    const result = await firstValueFrom(
-      this.httpService.get(`/srchDtlList`, {
-        params: {
-          isbn13: isbn,
-          authKey: process.env.LIBRARY_BIGDATA_API_KEY,
-          loaninfoYN: 'Y',
-          displayInfo: 'age',
-          format: 'json',
+  /**
+   * 책 검색으로는 검색결과가 없지만 도서 소장 도서관 검색에는
+   * 도서가 검색되는 경우가 있어 Naver api로 한번 더 검색
+   */
+  @Cacheable({
+    ttl: 1000 * 60 * 60, // 1 hours
+    customKey: (args) => `isbn-${args[0]}`,
+  })
+  async searchBook__naver(isbn: searchBookDto['isbn']) {
+    try {
+      const resultXML = await this.httpService.axiosRef.get(
+        'https://openapi.naver.com/v1/search/book_adv.xml',
+        {
+          headers: {
+            'X-Naver-Client-Id': process.env.NAVER_CLIENT_ID,
+            'X-Naver-Client-Secret': process.env.NAVER_SECRET,
+          },
+          params: {
+            d_isbn: isbn,
+          },
         },
-      }),
-    );
+      );
+      const jsonObj = this.parser.parse(resultXML.data);
+      const book = {
+        bookname: jsonObj.rss.channel.item.title,
+        authors: jsonObj.rss.channel.item.author,
+        publisher: jsonObj.rss.channel.item.publisher,
+        publication_year: jsonObj.rss.channel.item.pubdate
+          .toString()
+          .slice(0, 4),
+        isbn: jsonObj.rss.channel.item.isbn,
+        bookImageURL: jsonObj.rss.channel.item.image,
+      };
+      return book;
+    } catch (error) {
+      this.logger.error('searchBook__naver service error', error);
+      this.commonService.sendMessageToDiscord(
+        'searchBook__naver error',
+        JSON.stringify(error),
+        'Error',
+      );
+      throw new InternalServerErrorException('searchBook__naver error');
+    }
+  }
 
-    return result.data;
+  async searchBook(isbn: searchBookDto['isbn']) {
+    try {
+      const result = await lastValueFrom(
+        this.httpService.get(`/srchDtlList`, {
+          params: {
+            isbn13: isbn,
+            authKey: process.env.LIBRARY_BIGDATA_API_KEY,
+            loaninfoYN: 'Y',
+            displayInfo: 'age',
+            format: 'json',
+          },
+        }),
+      );
+      let book = {};
+      if (result.data.response.error) {
+        return await this.searchBook__naver(isbn);
+      }
+      book = result.data.response.detail[0].book;
+      return book;
+    } catch (error) {
+      this.logger.error('searchBook service error', error);
+    }
   }
   async searchBooks(
     mode: searchBooksDto['mode'],

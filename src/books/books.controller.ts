@@ -23,7 +23,8 @@ export class BooksController {
     );
   }
 
-  //사용 예정
+  @UseInterceptors(CacheInterceptor)
+  @Serialize(BookDto)
   @Get('/search/:isbn')
   async searchBook(@Param('isbn') isbn: string) {
     return await this.booksService.searchBook(isbn);
