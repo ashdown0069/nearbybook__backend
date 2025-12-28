@@ -1,8 +1,21 @@
+//9788954651134, 9791167372864, 9791167740984
+
+
 ###
 GET  http://localhost:4001/getlibs?isbn=9791194383437&region=11&dtl_region=11060
 
 ###
-GET  http://localhost:4001/isbn?isbn=9791141602451&region=11&dtl_region=11020
+GET  http://localhost:4001/libraries/searchbyisbn?isbn=9788954651134&region=11&dtlRegion=11020
+
+###
+GET  http://localhost:4001/libraries/searchbyisbn?isbn=9791141602451&region=11&dtlRegion=11020
+
+###
+GET  http://localhost:4001/libraries/searchbyisbn?isbn=9791167740984&region=11&dtlRegion=11020
+
+###
+GET  http://localhost:4001/libraries/searchbyisbn?isbn=9791167372864&region=11&dtlRegion=11020
+
 
 ###
 GET  http://localhost:4001/searchbooks?query=9791194383437&mode=isbn&pageNo=1

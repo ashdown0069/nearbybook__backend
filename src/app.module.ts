@@ -10,7 +10,33 @@ import { CacheModule } from '@nestjs/cache-manager';
 import { BooksModule } from './books/books.module';
 import { LibrariesModule } from './libraries/libraries.module';
 import { CommonModule } from './common/common.module';
+import * as https from 'https';
+import * as http from 'http';
+import CacheableLookup from 'cacheable-lookup';
 
+const cacheable = new CacheableLookup();
+
+const httpAgent = new http.Agent({
+  keepAlive: true,
+  maxSockets: 200,
+  maxFreeSockets: 20,
+  maxTotalSockets: 200,
+  scheduling: 'lifo',
+  timeout: 20000, // connection timeout
+  keepAliveMsecs: 1000,
+});
+const httpsAgent = new https.Agent({
+  keepAlive: true,
+  maxSockets: 200,
+  maxFreeSockets: 20,
+  maxTotalSockets: 200,
+  scheduling: 'lifo',
+  timeout: 20000, // connection timeout
+  keepAliveMsecs: 1000,
+});
+
+cacheable.install(httpAgent);
+cacheable.install(httpsAgent);
 @Module({
   imports: [
     ConfigModule.forRoot({
@@ -29,9 +55,11 @@ import { CommonModule } from './common/common.module';
     }),
     HttpModule.register({
       global: true,
-      timeout: 5000,
       maxRedirects: 5,
+      timeout: 20000,
       baseURL: 'http://data4library.kr/api',
+      httpAgent,
+      httpsAgent,
     }),
     TypeOrmModule.forRoot({
       type: 'better-sqlite3',

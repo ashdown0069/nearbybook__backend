@@ -48,15 +48,19 @@ export class BooksService {
         },
       );
       const jsonObj = this.parser.parse(resultXML.data);
+
+      if (!jsonObj?.rss?.channel?.item) {
+        return {};
+      }
+
+      const item = jsonObj.rss.channel.item;
       const book = {
-        bookname: jsonObj.rss.channel.item.title,
-        authors: jsonObj.rss.channel.item.author,
-        publisher: jsonObj.rss.channel.item.publisher,
-        publication_year: jsonObj.rss.channel.item.pubdate
-          .toString()
-          .slice(0, 4),
-        isbn: jsonObj.rss.channel.item.isbn,
-        bookImageURL: jsonObj.rss.channel.item.image,
+        bookname: item.title,
+        authors: item.author,
+        publisher: item.publisher,
+        publication_year: item.pubdate.toString().slice(0, 4),
+        isbn: item.isbn,
+        bookImageURL: item.image,
       };
       return book;
     } catch (error) {
@@ -83,14 +87,18 @@ export class BooksService {
           },
         }),
       );
-      let book = {};
+
       if (result.data.response.error) {
         return await this.searchBook__naver(isbn);
       }
-      book = result.data.response.detail[0].book;
-      return book;
+      const foundBook = result.data.response.detail[0].book;
+      if (foundBook) {
+        return foundBook;
+      }
+      return {};
     } catch (error) {
       this.logger.error('searchBook service error', error);
+      return {};
     }
   }
   async searchBooks(
